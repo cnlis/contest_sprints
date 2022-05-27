@@ -1,74 +1,83 @@
-# 68493612
+# 68510252
 """Модуль класса Deque.
 
 Класс содержит методы, позволяющие добавлять и получать значения из начала
 и конца дека за О(1)
 """
 
-from typing import List, Optional, Union
-
+from collections.abc import Iterator
+from typing import List, Optional
 
 ERROR_MSG = 'error'
-TEST_MODE = False
+TEST_MODE = True
+
+
+class Pointer:
+    def __init__(self, max_size: int):
+        self.value: int = 0
+        self.max_size: int = max_size
+
+    def __call__(self) -> int:
+        return self.value
+
+    def inc(self) -> None:
+        self.value = (self.value + 1) % self.max_size
+
+    def dec(self) -> None:
+        self.value = (self.value - 1) % self.max_size
 
 
 class Deque:
     def __init__(self, max_size: int):
-        self.max_size = max_size
-        self.queue = [None] * max_size
-        self.head = 0
-        self.tail = 0
-        self.size = 0
+        self.max_size: int = max_size
+        self.queue: List[Optional[int]] = [None] * max_size
+        self.head: Pointer = Pointer(max_size)
+        self.tail: Pointer = Pointer(max_size)
+        self.size: int = 0
 
-    def _inc(self, pointer: int) -> int:
-        return (pointer + 1) % self.max_size
+    def __len__(self) -> int:
+        return self.size
 
-    def _dec(self, pointer: int) -> int:
-        return (pointer - 1) % self.max_size
+    def _is_empty(self) -> bool:
+        return not len(self)
 
-    def push_back(self, value: str) -> Optional[str]:
-        if self.size == self.max_size:
-            return ERROR_MSG
-        self.queue[self.tail] = int(value)
-        self.tail = self._inc(self.tail)
+    def _is_full(self) -> bool:
+        return len(self) >= self.max_size
+
+    def push_back(self, value: str) -> None:
+        if self._is_full():
+            raise IndexError(ERROR_MSG)
+        self.queue[self.tail()] = int(value)
+        self.tail.inc()
         self.size += 1
 
-    def push_front(self, value: str) -> Optional[str]:
-        if self.size == self.max_size:
-            return ERROR_MSG
-        self.head = self._dec(self.head)
-        self.queue[self.head] = int(value)
+    def push_front(self, value: str) -> None:
+        if self._is_full():
+            raise IndexError(ERROR_MSG)
+        self.head.dec()
+        self.queue[self.head()] = int(value)
         self.size += 1
 
-    def pop_front(self) -> Union[str, int]:
-        if not self.size:
-            return ERROR_MSG
-        value = self.queue[self.head]
-        self.queue[self.head] = None
-        self.head = self._inc(self.head)
+    def pop_front(self) -> int:
+        if self._is_empty():
+            raise IndexError(ERROR_MSG)
+        value = self.queue[self.head()]
+        self.queue[self.head()] = None
+        self.head.inc()
         self.size -= 1
         return value
 
-    def pop_back(self) -> Union[str, int]:
-        if not self.size:
-            return ERROR_MSG
-        self.tail = self._dec(self.tail)
-        value = self.queue[self.tail]
-        self.queue[self.tail] = None
+    def pop_back(self) -> int:
+        if self._is_empty():
+            raise IndexError(ERROR_MSG)
+        self.tail.dec()
+        value = self.queue[self.tail()]
+        self.queue[self.tail()] = None
         self.size -= 1
         return value
 
-    @property
-    def manager(self):
-        return {
-            'push_back': self.push_back,
-            'push_front': self.push_front,
-            'pop_front': self.pop_front,
-            'pop_back': self.pop_back,
-        }
 
-
-def run_operations(deque_size: int, operations: List[str]):
+def run_operations(deque_size: int, operations: Iterator[str]):
     """Запуск списка операций над деком.
 
     >>> run_operations(4, ['push_front 861', 'push_front -819', 'pop_back', \
@@ -86,13 +95,19 @@ def run_operations(deque_size: int, operations: List[str]):
                            'pop_back'])
     20
     102
+    >>> run_operations(1, ['pop_back'])
+    error
     """
     deque = Deque(deque_size)
     for operation in operations:
-        params = operation.split()
-        result = deque.manager[params[0]](*params[1:])
-        if result is not None:
-            print(result)
+        command, *args = operation.split()
+        try:
+            func = getattr(deque, command)
+            result = func(*args)
+            if result is not None:
+                print(result)
+        except (AttributeError, IndexError):
+            print(ERROR_MSG)
 
 
 if __name__ == '__main__':
@@ -102,8 +117,8 @@ if __name__ == '__main__':
         if n > 100000 or m > 50000:
             print(ERROR_MSG)
             exit()
-        operations = [input() for _ in range(n)]
-        run_operations(m, operations)
+        commands = (input() for _ in range(n))
+        run_operations(m, commands)
     else:
         import doctest
         doctest.testmod(verbose=True)

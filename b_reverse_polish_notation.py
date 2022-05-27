@@ -1,13 +1,26 @@
-# 68493717
+# 68510300
 """Обратная польская нотация.
 
 Содержит функцию calculate, вычисляющую выражение, записанное в обратной
 польской нотации.
 """
 
+import inspect
+import operator
 from typing import List
 
 TEST_MODE = False
+
+
+class Stack:
+    def __init__(self):
+        self.items: List[int] = []
+
+    def pop(self) -> int:
+        return self.items.pop()
+
+    def push(self, value: int) -> None:
+        self.items.append(value)
 
 
 def calculate(operands: List[str]) -> int:
@@ -23,17 +36,19 @@ def calculate(operands: List[str]) -> int:
     2
     """
     operations = {
-        '+': lambda a, b: b + a,
-        '-': lambda a, b: b - a,
-        '*': lambda a, b: b * a,
-        '/': lambda a, b: b // a,
+        '+': operator.add,
+        '-': operator.sub,
+        '*': operator.mul,
+        '/': operator.floordiv,
     }
-    stack = []
+    stack = Stack()
     for operand in operands:
         if operand.lstrip('-').isdigit():
-            stack.append(int(operand))
+            stack.push(int(operand))
         else:
-            stack.append(operations[operand](stack.pop(), stack.pop()))
+            func = operations[operand]
+            args = [stack.pop() for _ in inspect.signature(func).parameters]
+            stack.push(func(*reversed(args)))
     return stack.pop()
 
 
