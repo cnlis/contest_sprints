@@ -1,7 +1,12 @@
-# 68762946
+# 68788993
+from typing import List
 
-def search(nums, target, left, right) -> int:
+
+def broken_search(nums: List[int], target: int, left: int = 0,
+                  right: int = None) -> int:
     """Поиск значения в смещенном упорядоченном массиве за O(log(n))."""
+    if right is None:
+        right = len(nums)
     if right <= left:
         return -1
     mid = (left + right) // 2
@@ -15,12 +20,8 @@ def search(nums, target, left, right) -> int:
             or (nums[left] > nums[mid]
                 and ((nums[left] > target < nums[mid])
                      or (nums[left] < target > nums[mid])))):
-        return search(nums, target, left, mid)
-    return search(nums, target, mid+1, right)
-
-
-def broken_search(nums, target) -> int:
-    return search(nums, target, 0, len(nums))
+        return broken_search(nums, target, left, mid)
+    return broken_search(nums, target, mid+1, right)
 
 
 def test():
